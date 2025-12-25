@@ -7,7 +7,6 @@ from typing import Optional
 import cuda.bindings.driver as cuda
 import cutlass.cute as cute
 import torch
-
 import triton
 import triton.language as tl
 
@@ -323,7 +322,7 @@ def _down_projection_backward(
     else:
         mDz_kernel_input = convert_torch_tensor_to_cute_tensor(dz.detach(), (0, 1), 1, 16, 8)
         mZ_kernel_input = convert_torch_tensor_to_cute_tensor(z.detach(), (0, 1), 1, 16, 8)
-        
+
     mY1S = convert_torch_tensor_to_cute_tensor(y1s, (0, 1), 1, 16, 8)
     mY1S_trans = convert_torch_tensor_to_cute_tensor(y1s.T, (1, 0), 0, 16, 8)
     mE_offset = convert_torch_tensor_to_cute_tensor(expert_frequency_offset, (0,), 0, 4, 1)

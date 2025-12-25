@@ -19,7 +19,7 @@ class ActivationType(Enum):
     SWIGLU = "swiglu"
     GEGLU = "geglu"
     REGLU = "reglu"
-    
+
     RELU_SQ = "relu_sq"
     RELU = "relu"
     GELU = "gelu"

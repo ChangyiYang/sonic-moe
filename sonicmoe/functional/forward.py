@@ -5,10 +5,9 @@
 import cuda.bindings.driver as cuda
 import cutlass.cute as cute
 import torch
-from cutlass.cute.runtime import from_dlpack
-
 import triton
 import triton.language as tl
+from cutlass.cute.runtime import from_dlpack
 from quack.cute_dsl_utils import torch2cute_dtype_map
 
 from ..enums import LIBRARY_NAME, TENSORMAP, ActivationType
@@ -91,7 +90,9 @@ def _up_projection_forward(
 
     compile_w1_key = (E, H, I, (b1 is None), x.dtype, activation_type, is_inference_mode_enabled)
     if compile_w1_key not in _up_projection_forward.compile_cache:
-        w1_module = HopperWgmma_MoE_Up_proj_Fwd(E, H, I, activation_type=ActivationType(activation_type), inference_mode=is_inference_mode_enabled)
+        w1_module = HopperWgmma_MoE_Up_proj_Fwd(
+            E, H, I, activation_type=ActivationType(activation_type), inference_mode=is_inference_mode_enabled
+        )
         tensormaps = [w1_module.module.generate_tensormap(None, None, None) for _ in range(2)]
         _up_projection_forward.compile_cache[compile_w1_key] = cute.compile(
             w1_module,
@@ -189,7 +190,15 @@ def _router_forward(
     is_varlen_K: bool,
 ) -> None:
     token_gather_and_sum_varlen_K_triton(
-        y2, topk_scores, o, s_reverse_scatter_idx, num_activated_expert_per_token_offset, o.size(0), varlen_K_max, H, is_varlen_K
+        y2,
+        topk_scores,
+        o,
+        s_reverse_scatter_idx,
+        num_activated_expert_per_token_offset,
+        o.size(0),
+        varlen_K_max,
+        H,
+        is_varlen_K,
     )
 
 

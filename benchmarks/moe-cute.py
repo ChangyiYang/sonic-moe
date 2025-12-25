@@ -11,11 +11,11 @@ import cutlass
 import torch
 import torch.nn.functional as F
 from rich import print as print0
-
-from sonicmoe.enums import ActivationType, is_glu
-from sonicmoe import MoE
-from sonicmoe.functional import moe_TC_softmax_topk_layer
 from triton.testing import do_bench
+
+from sonicmoe import MoE
+from sonicmoe.enums import ActivationType, is_glu
+from sonicmoe.functional import moe_TC_softmax_topk_layer
 
 
 def swiglu(x: torch.Tensor) -> torch.Tensor:
@@ -27,7 +27,7 @@ def swiglu(x: torch.Tensor) -> torch.Tensor:
 def geglu(x: torch.Tensor) -> torch.Tensor:
     u = x[..., 1::2]
     g = x[..., ::2]
-    return (F.gelu(g.float()).to(dtype=g.dtype) * u)
+    return F.gelu(g.float()).to(dtype=g.dtype) * u
 
 
 def gelu(x: torch.Tensor) -> torch.Tensor:
@@ -41,7 +41,7 @@ def reglu(x: torch.Tensor) -> torch.Tensor:
 
 
 def relu(x: torch.Tensor) -> torch.Tensor:
-    return F.relu(x) 
+    return F.relu(x)
 
 
 def relu_sq(x: torch.Tensor) -> torch.Tensor:
@@ -79,9 +79,7 @@ def parse_arguments() -> argparse.Namespace:
         default=False,
     )
     parser.add_argument(
-        "--activation",
-        choices=["swiglu", "geglu", "reglu", "relu_sq", "relu", "silu", "gelu"],
-        default="swiglu"
+        "--activation", choices=["swiglu", "geglu", "reglu", "relu_sq", "relu", "silu", "gelu"], default="swiglu"
     )
     parser.add_argument(
         "--add_bias",
@@ -151,15 +149,7 @@ def run(
     # # Ref check
     if not skip_test:
         o, router_logits, expert_frequency = moe_TC_softmax_topk_layer(
-            x,
-            router_w,
-            w1.permute(1, 2, 0),
-            b1,
-            w2.permute(1, 2, 0),
-            b2,
-            moe.top_k,
-            moe.stream_id,
-            activation
+            x, router_w, w1.permute(1, 2, 0), b1, w2.permute(1, 2, 0), b2, moe.top_k, moe.stream_id, activation
         )
         if add_bias:
             dx, dw1, db1, dw2, db2, drouter_w = torch.autograd.grad(
@@ -182,11 +172,10 @@ def run(
             ActivationType.SWIGLU: swiglu,
             ActivationType.GEGLU: geglu,
             ActivationType.REGLU: reglu,
-            
             ActivationType.GELU: gelu,
             ActivationType.RELU: relu,
             ActivationType.SILU: silu,
-            ActivationType.RELU_SQ: relu_sq
+            ActivationType.RELU_SQ: relu_sq,
         }[activation]
 
         with torch.autocast("cuda:0", torch.float32):
@@ -198,7 +187,7 @@ def run(
 
                 if T_idx.numel() > 0:
                     w1_out = F.linear(x[T_idx, :], w1[i, :, :].squeeze(), bias=(b1[i] if add_bias else None))
-                    w1_out = act_func(w1_out) 
+                    w1_out = act_func(w1_out)
 
                     w2_out = F.linear(w1_out, w2[i, :, :].squeeze(), bias=(b2[i] if add_bias else None))
 
@@ -243,7 +232,7 @@ def run(
         flops = 6 * T * I * H * K
     else:
         flops = 4 * T * I * H * K
-    
+
     repeats = 500
     warmup = 5
 
@@ -287,7 +276,16 @@ def run(
     @torch.compile
     def forward_and_backward():
         o, router_logits, expert_frequency = moe_TC_softmax_topk_layer(
-            x, router_w, w1.permute(1, 2, 0), b1, w2.permute(1, 2, 0), b2, moe.top_k, moe.stream_id, activation, False, 
+            x,
+            router_w,
+            w1.permute(1, 2, 0),
+            b1,
+            w2.permute(1, 2, 0),
+            b2,
+            moe.top_k,
+            moe.stream_id,
+            activation,
+            False,
         )
         o.backward(dout, retain_graph=True)
         x.grad = w1.grad = w2.grad = router_w.grad = None
@@ -295,7 +293,6 @@ def run(
     e2e_timing = do_bench(forward_and_backward, warmup=warmup, rep=repeats, grad_to_none=[x, w1, w2, router_w, dout])
     tflops = flops / (e2e_timing * 1e9)  # Convert to TFlops
     print0(f"[bold green][/bold green] Cute-DSL Fwd + Bwd Average time: {e2e_timing:.3f} ms, TFLOPS: {tflops:.1f}")
-
 
     if is_glu(activation):
         flops = 12 * T * I * H * K

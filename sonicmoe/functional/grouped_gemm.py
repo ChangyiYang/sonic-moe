@@ -49,7 +49,6 @@ from cutlass._mlir.dialects import llvm, vector
 from cutlass.cute.nvgpu import cpasync, warp, warpgroup
 from cutlass.cute.runtime import from_dlpack
 from cutlass.cutlass_dsl import T, dsl_user_op
-
 from quack.cute_dsl_utils import ParamsBase
 
 # return PipelineStateWAdvance instead of PipelineState
@@ -84,16 +83,13 @@ class HopperWgmma_MoE_kernel:
         is_persistent: bool = True,
         compute_dz_and_partial_ds_and_y1s: bool = False,
         compute_weight_gradient: bool = False,
-
-        compute_relu: bool = False,        
+        compute_relu: bool = False,
         compute_silu: bool = False,
         compute_gelu: bool = False,
         compute_relu_sq: bool = False,
-        
         compute_swiglu: bool = False,
         compute_reglu: bool = False,
         compute_geglu: bool = False,
-        
         is_normal_act: bool = False,
         is_glu: bool = False,
         is_A_gather: bool = False,

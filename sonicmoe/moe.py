@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .count_cumsum import count_cumsum
-from .enums import KernelBackendMoE, ActivationType, is_glu
+from .enums import ActivationType, KernelBackendMoE, is_glu
 from .functional import moe_TC_softmax_topk_layer
 
 
@@ -44,7 +44,7 @@ def _reglu(x: torch.Tensor) -> torch.Tensor:
 
 
 def _relu(x: torch.Tensor) -> torch.Tensor:
-    return F.relu(x) 
+    return F.relu(x)
 
 
 def _relu_sq(x: torch.Tensor) -> torch.Tensor:
@@ -312,11 +312,10 @@ class MoE(nn.Module):
             ActivationType.SWIGLU: _swiglu,
             ActivationType.GEGLU: _geglu,
             ActivationType.REGLU: _reglu,
-            
             ActivationType.GELU: _gelu,
             ActivationType.RELU: _relu,
             ActivationType.SILU: _silu,
-            ActivationType.RELU_SQ: _relu_sq
+            ActivationType.RELU_SQ: _relu_sq,
         }[self.activation_function]
 
         T = hidden_states.size(0)

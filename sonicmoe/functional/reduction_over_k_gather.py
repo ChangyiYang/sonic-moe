@@ -10,12 +10,11 @@ import cuda.bindings.driver as cuda
 import cutlass
 import cutlass.cute as cute
 import torch
+import triton
+import triton.language as tl
 from cutlass import Float32, const_expr
 from cutlass._mlir.dialects import llvm
 from cutlass.cutlass_dsl import dsl_user_op
-
-import triton
-import triton.language as tl
 from quack.cute_dsl_utils import ParamsBase, torch2cute_dtype_map
 from quack.tile_scheduler import RasterOrderOption, TileSchedulerArguments
 
